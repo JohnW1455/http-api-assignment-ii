@@ -6,6 +6,27 @@ const jsonHandler = require('./jsonResponses.js');
 
 const port = process.env.PORT || process.env.NODE_PORT || 3000;
 
+const parseBody = (request, response) => {
+    const body = [];
+
+    request.on('error', (err) => {
+      console.dir(err);
+      response.statusCode = 400;
+      response.end();
+    });
+  
+    request.on('data', (chunk) => {
+      body.push(chunk);
+    });
+  
+    request.on('end', () => {
+      const bodyString = Buffer.concat(body).toString();
+      const bodyParams = query.parse(bodyString);
+  
+      jsonHandler.addUser(request, response, bodyParams);
+    });
+};
+
 const urlStruct = {
     'GET': {
         '/': htmlHandler.getIndex,
@@ -18,6 +39,9 @@ const urlStruct = {
         '/getUsers': jsonHandler.getUsersMeta,
         '/notReal': jsonHandler.notFoundMeta,
         notFound: jsonHandler.notFoundMeta,
+    },
+    'POST': {
+        '/addUser': parseBody,
     }
 }
 

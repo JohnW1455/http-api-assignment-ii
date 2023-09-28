@@ -12,6 +12,15 @@
         case 200:
           content.innerHTML = `<h1><b>Success</b></h1>`;
           break;
+        case 201:
+          content.innerHTML = `<h1><b>Created</b></h1>`;
+          break;
+        case 204:
+          content.innerHTML = `<h1><b>Updated (No Content)</b></h1>`;
+          break;
+        case 400:
+          content.innerHTML = `<h1><b>Bad Request</b></h1>`;
+          break;
         case 404:
           content.innerHTML = `<h1><b>Not Found</b></h1>`;
           break;
@@ -20,7 +29,7 @@
           break;
       }
 
-      if (parseBool) {
+      if (parseBool && response.status !== 204) {
         const responseObj = await response.text();
         const data = JSON.parse(responseObj);
         console.log(data);
@@ -31,32 +40,61 @@
           content.innerHTML += `\n<p>Message: ${data.message}`;
         }
       }
-        
     };
 
-    const requestUpdate = async (url, method) => {
-      const response = await fetch(url, {
-        method,
+    const sendPost = async (nameForm) => {
+      const nameAction = nameForm.getAttribute('action');
+      const nameMethod = nameForm.getAttribute('method');
+      
+      const nameField = nameForm.querySelector('#nameField');
+      const ageField = nameForm.querySelector('#ageField');
+
+      const formData = `name=${nameField.value}&age=${ageField.value}`;
+
+      let response = await fetch(nameAction, {
+        method: nameMethod,
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Accept': 'application/json',
+        },
+        body: formData,
+      });
+
+      handleResponse(response, nameMethod === 'post');
+    }
+
+    const getUserData = async (userForm) => {
+      const url = userForm.querySelector('#urlField');
+      const headMethod = userForm.querySelector('#methodSelect');
+
+      const response = await fetch(url.value, {
+        method: headMethod.value,
         headers: {
           'Accept': 'application/json',
         }
       });
 
-      handleResponse(response, method === 'get');
+      handleResponse(response, headMethod.value === 'get');
     };    
 
     const init = () => {
-      const urlForm = document.querySelector('#urlField');
-      const methodForm = document.querySelector('#methodSelect');
-      const getUserButton = document.querySelector('#getUserButton');
+      const userForm = document.querySelector('#userForm');
+      const nameForm = document.querySelector('#nameForm');
       
-      getUserButton.addEventListener('click', (event) => {
-        event.preventDefault();
-
-        requestUpdate(urlForm.value, methodForm.value);
-
+      const getUsers = (e) => {
+        e.preventDefault();
+        getUserData(userForm);
         return false;
-      });
+      }
+
+      const addUser = (e) => {
+        e.preventDefault();
+        sendPost(nameForm);
+        return false;
+      }
+
+      userForm.addEventListener('submit', getUsers);
+      nameForm.addEventListener('submit', addUser);
     };
 
     window.onload = init;
@@ -67,7 +105,7 @@
     <h3>POST Status Code Tests</h3>
     <form id="nameForm" action="/addUser" method="post">
       <label for="name">Name: </label>
-      <input id="nameField" type="text" name="name" />
+      <input id="nameField" type="text" name="name"/>
       <label for="age">Age: </label>
       <input id="ageField" type="number" name="age" min="0" max="100" step="1"/>
       <input type="submit" value="Add User" />
